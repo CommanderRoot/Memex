@@ -20,7 +20,7 @@ import {
     fontSizeNormal,
     fontSizeSmall,
 } from 'src/common-ui/components/design-library/typography'
-import { EntrySelectedList } from 'src/custom-lists/ui/CollectionPicker/components/EntrySelectedList'
+import { EntrySelectedList } from 'src/common-ui/GenericPicker/components/EntrySelectedList'
 
 class DomainPicker extends StatefulUIElement<
     DomainPickerDependencies,
@@ -29,6 +29,17 @@ class DomainPicker extends StatefulUIElement<
 > {
     constructor(props: DomainPickerDependencies) {
         super(props, new DomainPickerLogic(props))
+    }
+
+    private get selectedDisplayEntries(): string[] {
+        return this.state.selectedEntries
+            .map(
+                (_entry) =>
+                    this.state.displayEntries.find(
+                        (entry) => entry.name === _entry,
+                    )?.name,
+            )
+            .filter((entry) => entry != null)
     }
 
     searchInputPlaceholder =
@@ -126,7 +137,7 @@ class DomainPicker extends StatefulUIElement<
                     before={
                         <EntrySelectedList
                             dataAttributeName="domain-name"
-                            entriesSelected={this.state.selectedEntries}
+                            entriesSelected={this.selectedDisplayEntries}
                             onPress={this.handleSelectedDomainPress}
                         />
                     }

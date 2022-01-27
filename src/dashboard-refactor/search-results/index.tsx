@@ -101,6 +101,7 @@ export type Props = RootState &
             day: number,
             pageId: string,
         ): (sorter: AnnotationsSorter) => void
+        getListNameById: (id: number) => string
         paginateSearch(): Promise<void>
         onPageLinkCopy(link: string): Promise<void>
         onNoteLinkCopy(link: string): Promise<void>
@@ -137,6 +138,7 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                 body={noteData.highlight}
                 comment={noteData.comment}
                 isShared={noteData.isShared}
+                getListNameById={this.props.getListNameById}
                 isBulkShareProtected={noteData.isBulkShareProtected}
                 createdWhen={new Date(noteData.displayTime)}
                 onTagClick={this.props.filterSearchByTag}
@@ -178,7 +180,7 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                 }
                 renderListsPickerForAnnotation={() =>
                     noteData.isListPickerShown && (
-                        <HoverBox right="0" withRelativeContainer>
+                        <HoverBox withRelativeContainer>
                             <CollectionPicker
                                 initialSelectedEntries={
                                     () => noteData.lists ?? [] // defaulting to [] because existing notes don't have a list prop
@@ -186,15 +188,24 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                                 onClickOutside={
                                     interactionProps.onListPickerBtnClick
                                 }
-                                onUpdateEntrySelection={
-                                    interactionProps.updateLists
+                                selectEntry={(listId) =>
+                                    interactionProps.updateLists({
+                                        added: listId,
+                                        deleted: null,
+                                        selected: [],
+                                    })
                                 }
+                                unselectEntry={(listId) =>
+                                    interactionProps.updateLists({
+                                        added: null,
+                                        deleted: listId,
+                                        selected: [],
+                                    })
+                                }
+                                createNewEntry={interactionProps.createNewList}
                                 queryEntries={interactionProps.listQueryEntries}
                                 loadDefaultSuggestions={
                                     interactionProps.loadDefaultListSuggestions
-                                }
-                                loadRemoteListNames={
-                                    interactionProps.loadRemoteListNames
                                 }
                             />
                         </HoverBox>
@@ -225,15 +236,24 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                                 onClickOutside={
                                     interactionProps.onShareBtnClick
                                 }
-                                onUpdateEntrySelection={
-                                    interactionProps.updateLists
+                                selectEntry={(listId) =>
+                                    interactionProps.updateLists({
+                                        added: listId,
+                                        deleted: null,
+                                        selected: [],
+                                    })
                                 }
+                                unselectEntry={(listId) =>
+                                    interactionProps.updateLists({
+                                        added: null,
+                                        deleted: listId,
+                                        selected: [],
+                                    })
+                                }
+                                createNewEntry={interactionProps.createNewList}
                                 queryEntries={interactionProps.listQueryEntries}
                                 loadDefaultSuggestions={
                                     interactionProps.loadDefaultListSuggestions
-                                }
-                                loadRemoteListNames={
-                                    interactionProps.loadRemoteListNames
                                 }
                             />
                         </HoverBox>
@@ -345,6 +365,7 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                 <PageResult
                     isSearchFilteredByList={this.props.selectedListId != null}
                     filteredbyListID={this.props.selectedListId}
+                    getListNameById={this.props.getListNameById}
                     onTagClick={this.props.filterSearchByTag}
                     shareMenuProps={{
                         normalizedPageUrl: page.normalizedUrl,
@@ -452,10 +473,10 @@ export default class SearchResultsContainer extends PureComponent<Props> {
 
         return (
             <>
-                <ButtonTooltip tooltipText="Share Collection" position="bottom">
+                <ButtonTooltip tooltipText="Share Space" position="bottom">
                     <IconBox>
                         <Icon
-                            icon="shareEmpty"
+                            filePath={icons.link}
                             height="16px"
                             color="primary"
                             onClick={this.props.toggleListShareMenu}
@@ -464,9 +485,9 @@ export default class SearchResultsContainer extends PureComponent<Props> {
                 </ButtonTooltip>
                 {this.props.isListShareMenuShown && (
                     <HoverBox
-                        width="320px"
+                        width="340px"
                         top="20px"
-                        right="-150px"
+                        right="-90px"
                         withRelativeContainer
                     >
                         <ListShareMenu

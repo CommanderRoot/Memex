@@ -31,11 +31,9 @@ import * as icons from 'src/common-ui/components/design-library/icons'
 import AllNotesShareMenu from 'src/overview/sharing/AllNotesShareMenu'
 import { PageNotesCopyPaster } from 'src/copy-paster'
 import { HoverBox } from 'src/common-ui/components/design-library/HoverBox'
-import { normalizeUrl } from '@worldbrain/memex-url-utils'
 import { ClickAway } from 'src/util/click-away-wrapper'
 import { AnnotationSharingStates } from 'src/content-sharing/background/types'
 import { getLocalStorage, setLocalStorage } from 'src/util/storage'
-import { RemoteCollectionsInterface } from 'src/custom-lists/background/types'
 import { ContentSharingInterface } from 'src/content-sharing/background/types'
 
 const SHOW_ISOLATED_VIEW_KEY = `show-isolated-view-notif`
@@ -44,6 +42,7 @@ export interface AnnotationsSidebarProps
     annotationModes: { [url: string]: AnnotationMode }
 
     setActiveAnnotationUrl?: (url: string) => React.MouseEventHandler
+    getListNameById: (id: number) => string
 
     bindSharedAnnotationEventHandlers: (
         sharedAnnotationReference: SharedAnnotationReference,
@@ -218,21 +217,10 @@ class AnnotationsSidebar extends React.Component<
     }
 
     private renderNewAnnotation(context?: string) {
-        const listsToCreate = this.getListsForAnnotationCreate(
-            this.props.followedLists,
-            this.props.isolatedView,
-            this.props.annotationCreateProps.lists,
-        )
-        const paddedAnnotationCreateProps = {
-            ...this.props.annotationCreateProps,
-            lists: listsToCreate,
-            // onSave: this.props.annotationCreateProps.onSave
-        }
-        // updateNewPageCommentLists
         return (
             <NewAnnotationSection context={context}>
                 <AnnotationCreate
-                    {...paddedAnnotationCreateProps}
+                    {...this.props.annotationCreateProps}
                     ref={this.annotationCreateRef}
                     autoFocus
                 />
@@ -324,6 +312,7 @@ class AnnotationsSidebar extends React.Component<
                                     conversation?.thread != null ||
                                     conversation?.replies.length > 0
                                 }
+                                getListNameById={this.props.getListNameById}
                             />
                             <ConversationReplies
                                 {...eventHandlers}
@@ -670,7 +659,7 @@ class AnnotationsSidebar extends React.Component<
                         this.setState({ showAllNotesShareMenu: false })
                     }
                 >
-                    <HoverBox>
+                    <HoverBox width="340px">
                         <AllNotesShareMenu
                             contentSharingBG={this.props.contentSharing}
                             annotationsBG={this.props.annotationsShareAll}
@@ -788,7 +777,7 @@ class AnnotationsSidebar extends React.Component<
                             </ActionBtn>
                         </ButtonTooltip>
                         <ButtonTooltip
-                            tooltipText="Share All Notes"
+                            tooltipText="Share annotated Page"
                             position="bottomRightEdge"
                         >
                             <ActionBtn
@@ -799,7 +788,7 @@ class AnnotationsSidebar extends React.Component<
                                 }
                                 isActive={this.state.showAllNotesShareMenu}
                             >
-                                <ActionIcon src={icons.shareEmpty} />
+                                <ActionIcon src={icons.link} />
                             </ActionBtn>
                         </ButtonTooltip>
                     </TopBarActionBtns>
@@ -1297,7 +1286,7 @@ const CopyPasterWrapperTopBar = styled.div`
 
 const ShareMenuWrapperTopBar = styled.div`
     position: relative;
-    right: 190px;
+    right: 240px;
     z-index: 10;
     top: 20px;
 `

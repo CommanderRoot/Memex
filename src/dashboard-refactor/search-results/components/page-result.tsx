@@ -32,6 +32,7 @@ export interface Props
         PageResult,
         PageInteractionProps,
         PagePickerProps {
+    getListNameById: (id: number) => string
     onTagClick?: (tag: string) => void
     isSearchFilteredByList: boolean
     filteredbyListID: number
@@ -78,17 +79,41 @@ export default class PageResultView extends PureComponent<Props> {
     private get hasLists(): boolean {
         return this.props.lists.length > 0
     }
+
+    private get displayLists(): Array<{ id: number; name: string }> {
+        return this.props.lists.map((id) => ({
+            id,
+            name: this.props.getListNameById(id),
+        }))
+    }
+
     private renderSpacePicker() {
         // space picker is separated out to make the Add to Space button contain the call to render the picker
         if (this.props.isListPickerShown) {
             return (
-                <HoverBox withRelativeContainer>
-                    <CollectionPicker
-                        onUpdateEntrySelection={this.props.onListPickerUpdate}
-                        initialSelectedEntries={() => this.props.lists}
-                        onClickOutside={this.props.onListPickerBtnClick}
-                    />
-                </HoverBox>
+                <div onMouseLeave={this.props.onListPickerBtnClick}>
+                    <HoverBox withRelativeContainer>
+                        <CollectionPicker
+                            selectEntry={(listId) =>
+                                this.props.onListPickerUpdate({
+                                    added: listId,
+                                    deleted: null,
+                                    selected: [],
+                                })
+                            }
+                            unselectEntry={(listId) =>
+                                this.props.onListPickerUpdate({
+                                    added: null,
+                                    deleted: listId,
+                                    selected: [],
+                                })
+                            }
+                            createNewEntry={this.props.createNewList}
+                            initialSelectedEntries={() => this.props.lists}
+                            onClickOutside={this.props.onListPickerBtnClick}
+                        />
+                    </HoverBox>
+                </div>
             )
         }
     }
@@ -252,6 +277,8 @@ export default class PageResultView extends PureComponent<Props> {
     render() {
         const hasTitle = this.props.fullTitle && this.props.fullTitle.length > 0
 
+        console.log(this.props.lists.includes(20201014, 0))
+
         return (
             <ItemBox
                 firstDivProps={{
@@ -264,11 +291,16 @@ export default class PageResultView extends PureComponent<Props> {
                     {this.renderRemoveFromListBtn()}
                     <PageContentBox
                         onMouseOver={this.props.onMainContentHover}
+                        onMouseLeave={
+                            this.props.isListPickerShown
+                                ? this.props.onListPickerBtnClick
+                                : undefined
+                        }
                         onClick={() => window.open(this.fullUrl)}
                         href={this.fullUrl}
                         target="_blank"
                     >
-                        <PageTitle top="10px" bottom="5px">
+                        <PageTitle bottom="5px">
                             {hasTitle
                                 ? this.props.fullTitle === this.props.fullUrl
                                     ? this.props.fullTitle.split('/').slice(-1)
@@ -286,7 +318,12 @@ export default class PageResultView extends PureComponent<Props> {
                             )}
                             <PageUrl>{this.domain}</PageUrl>
                             {this.props.hoverState === 'main-content' &&
-                                this.props.lists.length === 0 && (
+                                (this.props.lists.length === 0 ||
+                                    (this.props.lists.length === 1 &&
+                                        this.props.lists.includes(
+                                            20201014,
+                                            0,
+                                        ))) && (
                                     <AddSpaceButtonContainer>
                                         <AddSpacesButton
                                             hasNoLists={true}
@@ -304,18 +341,22 @@ export default class PageResultView extends PureComponent<Props> {
                                 )}
                         </ResultContent>
                     </PageContentBox>
-                    {this.props.lists.length > 0 && (
-                        <ListsSegment
-                            lists={this.props.lists}
-                            onMouseEnter={this.props.onListsHover}
-                            showEditBtn={this.props.hoverState === 'lists'}
-                            onListClick={undefined}
-                            onEditBtnClick={this.props.onListPickerBtnClick}
-                            renderListsPickerForAnnotation={this.renderSpacePicker.bind(
-                                this,
-                            )}
-                        />
-                    )}
+                    {this.hasLists &&
+                        !(
+                            this.props.lists.length === 1 &&
+                            this.props.lists.includes(20201014, 0)
+                        ) && (
+                            <ListsSegment
+                                lists={this.displayLists}
+                                onMouseEnter={this.props.onListsHover}
+                                showEditBtn={this.props.hoverState === 'lists'}
+                                onListClick={undefined}
+                                onEditBtnClick={this.props.onListPickerBtnClick}
+                                renderListsPickerForAnnotation={this.renderSpacePicker.bind(
+                                    this,
+                                )}
+                            />
+                        )}
                     <TagsSegment
                         tags={this.props.tags}
                         onMouseEnter={this.props.onTagsHover}
@@ -415,6 +456,7 @@ const ResultContent = styled(Margin)`
     align-items: center;
     justify-content: flex-start;
     cursor: pointer;
+    height: 24px;
 `
 
 const PageTitle = styled(Margin)`

@@ -18,7 +18,7 @@ import type { NoteResultHoverState, FocusableComponent } from './types'
 import type { AnnotationFooterEventProps } from 'src/annotations/components/AnnotationFooter'
 import QuickTutorial from '@worldbrain/memex-common/lib/editor/components/QuickTutorial'
 import CollectionPicker from 'src/custom-lists/ui/CollectionPicker'
-import ListHolder from 'src/custom-lists/ui/list-holder'
+import type { SpacePickerDependencies } from 'src/custom-lists/ui/CollectionPicker/logic'
 import { getKeyboardShortcutsState } from 'src/in-page-ui/keyboard-shortcuts/content_script/detection'
 import ListsSegment from 'src/common-ui/components/result-item-spaces-segment'
 
@@ -32,17 +32,19 @@ export interface AnnotationCreateEventProps {
     onSave: (shouldShare: boolean, isProtected?: boolean) => Promise<void>
     onCancel: () => void
     onTagsUpdate: (tags: string[]) => void
-    onListsUpdate: (tags: string[]) => void
     onCommentChange: (text: string) => void
+    getListNameById: (id: number) => string
     onTagsHover?: React.MouseEventHandler
     onListsHover?: React.MouseEventHandler
     annotationFooterDependencies?: AnnotationFooterEventProps
     onFooterHover?: React.MouseEventHandler
     onNoteHover?: React.MouseEventHandler
     onUnhover?: React.MouseEventHandler
-    loadDefaultListSuggestions?: () => string[] | Promise<string[]>
-    listQueryEntries?: (query: string) => Promise<string[]>
-    loadRemoteListNames?: () => Promise<string[]>
+    listQueryEntries?: SpacePickerDependencies['queryEntries']
+    loadDefaultListSuggestions?: SpacePickerDependencies['loadDefaultSuggestions']
+    createNewList?: SpacePickerDependencies['createNewEntry']
+    addPageToList?: SpacePickerDependencies['selectEntry']
+    removePageFromList?: SpacePickerDependencies['unselectEntry']
 }
 
 export interface AnnotationCreateGeneralProps {
@@ -50,7 +52,7 @@ export interface AnnotationCreateGeneralProps {
     autoFocus?: boolean
     comment: string
     tags: string[]
-    lists: string[]
+    lists: number[]
     onTagClick?: (tag: string) => void
     hoverState: NoteResultHoverState
     contextLocation?: string
@@ -62,9 +64,6 @@ export interface Props
         AnnotationCreateEventProps {
     loadDefaultTagSuggestions?: () => string[] | Promise<string[]>
     tagQueryEntries?: (query: string) => Promise<string[]>
-    loadDefaultListSuggestions?: () => string[] | Promise<string[]>
-    listQueryEntries?: (query: string) => Promise<string[]>
-    loadRemoteListNames?: () => Promise<string[]>
 }
 
 export class AnnotationCreate extends React.Component<Props, State>
@@ -95,10 +94,13 @@ export class AnnotationCreate extends React.Component<Props, State>
         if (this.props.autoFocus) {
             this.focus()
         }
-        if (this.props.lists.length > 0) {
-            // add lists to state (e.g. to begin with an isolated view list)
-            this.props.onListsUpdate(this.props.lists)
-        }
+    }
+
+    private get displayLists(): Array<{ id: number; name: string }> {
+        return this.props.lists.map((id) => ({
+            id,
+            name: this.props.getListNameById(id),
+        }))
     }
 
     focus() {
@@ -212,7 +214,7 @@ export class AnnotationCreate extends React.Component<Props, State>
         )
     }
     private renderSharedCollectionsPicker() {
-        const { lists, onListsUpdate } = this.props
+        const { lists } = this.props
 
         const setPickerShown = (isListPickerShown: boolean) =>
             this.setState({ isListPickerShown })
@@ -220,14 +222,12 @@ export class AnnotationCreate extends React.Component<Props, State>
         return (
             <CollectionPicker
                 loadDefaultSuggestions={this.props.loadDefaultListSuggestions}
-                // queryEntries={this.props.listQueryEntries}
                 queryEntries={this.props.listQueryEntries}
-                onUpdateEntrySelection={async ({ selected }) =>
-                    onListsUpdate(selected)
-                }
                 initialSelectedEntries={() => lists}
                 onEscapeKeyDown={() => setPickerShown(false)}
-                loadRemoteListNames={this.props.loadRemoteListNames}
+                unselectEntry={this.props.removePageFromList}
+                createNewEntry={this.props.createNewList}
+                selectEntry={this.props.addPageToList}
             />
         )
     }
@@ -305,7 +305,7 @@ export class AnnotationCreate extends React.Component<Props, State>
                     {this.props.comment !== '' && (
                         <>
                             <ListsSegment
-                                lists={this.props.lists}
+                                lists={this.displayLists}
                                 onMouseEnter={this.props.onListsHover}
                                 showEditBtn={this.props.hoverState === 'lists'}
                                 onListClick={undefined}

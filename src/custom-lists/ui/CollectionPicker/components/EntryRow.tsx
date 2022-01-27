@@ -6,35 +6,44 @@ import ButtonTooltip from 'src/common-ui/components/button-tooltip'
 import * as icons from 'src/common-ui/components/design-library/icons'
 import { Icon } from 'src/dashboard-refactor/styled-components'
 import { opacify } from 'polished'
-import { DisplayEntry } from '../types'
+import type { SpaceDisplayEntry } from '../logic'
 
 export interface Props {
-    onPress?: (entry: DisplayEntry) => void
-    onFocus?: (entry: DisplayEntry, index?: number) => void
-    onPressActOnAll?: (entry: DisplayEntry, index?: number) => void
+    onPress?: (entry: SpaceDisplayEntry) => void
+    onFocus?: (entry: SpaceDisplayEntry, index?: number) => void
+    onPressActOnAll?: (entry: SpaceDisplayEntry, index?: number) => void
     index: number
     name: string
+    localId: number
+    createdAt: number
     removeTooltipText?: string
     actOnAllTooltipText?: string
     resultItem: React.ReactNode
     selected?: boolean
     focused?: boolean
-    remote?: boolean
+    remoteId: string | number | null
 }
 
 class EntryRow extends React.Component<Props> {
-    _getEntry = (props) => {
-        const { name, selected, focused } = this.props
-        return { name, selected, focused }
+    _getEntry = () => {
+        const {
+            name,
+            selected,
+            focused,
+            localId,
+            remoteId,
+            createdAt,
+        } = this.props
+        return { name, selected, focused, localId, remoteId, createdAt }
     }
 
     handleEntryPress = () => {
-        this.props.onPress && this.props.onPress(this._getEntry(this.props))
+        this.props.onPress && this.props.onPress(this._getEntry())
     }
 
     handleActOnAllPress = (e: SyntheticEvent) => {
         this.props.onPressActOnAll &&
-            this.props.onPressActOnAll(this._getEntry(this.props))
+            this.props.onPressActOnAll(this._getEntry())
         e.preventDefault()
         e.stopPropagation()
         return false
@@ -42,17 +51,16 @@ class EntryRow extends React.Component<Props> {
 
     handleMouseOver = () => {
         this.props.onFocus &&
-            this.props.onFocus(this._getEntry(this.props), this.props.index)
+            this.props.onFocus(this._getEntry(), this.props.index)
     }
 
     handleMouseOut = () => {
-        this.props.onFocus &&
-            this.props.onFocus(this._getEntry(this.props), null)
+        this.props.onFocus && this.props.onFocus(this._getEntry(), null)
     }
 
     render() {
         const {
-            remote,
+            remoteId,
             selected,
             focused,
             onPressActOnAll,
@@ -68,7 +76,7 @@ class EntryRow extends React.Component<Props> {
             >
                 <NameWrapper>
                     {resultItem}
-                    {remote && (
+                    {remoteId != null && (
                         <ButtonTooltip tooltipText={'shared'} position="bottom">
                             <Icon
                                 heightAndWidth="14px"
@@ -110,6 +118,7 @@ export const ActOnAllTabsButton = styled(Layers)`
 
 export const IconStyleWrapper = styled.div`
     display: inline-flex;
+
     ${StyledIconBase} {
         stroke-width: 2px;
         color: ${(props) =>

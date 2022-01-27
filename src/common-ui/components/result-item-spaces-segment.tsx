@@ -1,14 +1,16 @@
 import React, { HTMLProps } from 'react'
 import ReactDOM from 'react-dom'
 import styled from 'styled-components'
+import Icon from '@worldbrain/memex-common/lib/common-ui/components/icon'
 
 import * as icons from 'src/common-ui/components/design-library/icons'
+import { SPECIAL_LIST_IDS } from '@worldbrain/memex-common/lib/storage/modules/lists/constants'
 
 export interface Props extends Pick<HTMLProps<HTMLDivElement>, 'onMouseEnter'> {
-    lists: string[]
     showEditBtn: boolean
-    onListClick?: (tag: string) => void
     onEditBtnClick: React.MouseEventHandler
+    lists: Array<{ id: number; name: string }>
+    onListClick?: (tag: number) => void
     renderListsPickerForAnnotation: () => JSX.Element
 }
 
@@ -39,11 +41,16 @@ export class AddSpacesButton extends React.Component<
                     }}
                 >
                     {this.props.hasNoLists ? (
-                        <>
-                            <span>+</span> <span>Add to Space</span>
-                        </>
+                        <ButtonBox>
+                            <Icon
+                                filePath={icons.collectionsEmpty}
+                                height={'12px'}
+                                color={'subText'}
+                            />
+                            Add to Space
+                        </ButtonBox>
                     ) : (
-                        <span>+</span>
+                        <Icon icon={'plus'} height={'10px'} color={'subText'} />
                     )}
                 </AddSpacesButtonContainer>
                 {this.props.renderListsPickerForAnnotation && (
@@ -79,10 +86,6 @@ export default function ListsSegment({
     renderListsPickerForAnnotation,
     ...props
 }: Props) {
-    // if (!lists?.length) {
-    //     return null
-    // }
-
     return (
         <Container {...props}>
             <ListsContainer>
@@ -93,16 +96,23 @@ export default function ListsSegment({
                         renderListsPickerForAnnotation
                     }
                 />
-                {lists.slice(0).map((space) => (
-                    <ListSpaceContainer
-                        key={space}
-                        onClick={
-                            onListClick ? () => onListClick(space) : undefined
-                        }
-                    >
-                        {space}
-                        {/* TODO: uncomment when collection context menu is done */}
-                        {/* {showEditBtn && (
+                {lists
+                    .filter(
+                        (l) => !Object.values(SPECIAL_LIST_IDS).includes(l.id),
+                    )
+                    .slice(0)
+                    .map((space) => (
+                        <ListSpaceContainer
+                            key={space.id}
+                            onClick={
+                                onListClick
+                                    ? () => onListClick(space.id)
+                                    : undefined
+                            }
+                        >
+                            {space.name}
+                            {/* TODO: uncomment when collection context menu is done */}
+                            {/* {showEditBtn && (
                             <ListPillSettingButton
                                 onClick={() => {
                                     // open the space context modal
@@ -111,8 +121,8 @@ export default function ListsSegment({
                                 {' ... '}
                             </ListPillSettingButton>
                         )} */}
-                    </ListSpaceContainer>
-                ))}
+                        </ListSpaceContainer>
+                    ))}
             </ListsContainer>
         </Container>
     )
@@ -126,14 +136,25 @@ const Container = styled.div`
     padding: 5px 15px;
 `
 
-const AddSpacesButtonContainer = styled.button`
-    background-color: white;
+const ButtonBox = styled.div`
+    padding: 0 8px;
+    display: grid;
+    grid-auto-flow: column;
+    grid-gap: 5px;
+    align-items: center;
+    color: ${(props) => props.theme.colors.subText};
+`
 
-    padding: 2px 8px;
+const AddSpacesButtonContainer = styled.div`
+    background-color: white;
+    padding: 2px 2px;
     border-radius: 4px;
+    border: 1px solid #e0e0e0;
     font-size: 12px;
     font-weight: 400;
-    height: auto;
+    height: 24px;
+    min-width: 24px;
+    justify-content: center;
     color: #284150;
     margin: 2px 4px 2px 0;
     display: flex;
@@ -141,6 +162,10 @@ const AddSpacesButtonContainer = styled.button`
     align-items: center;
     white-space: nowrap;
     font-family: 'Poppins', sans-serif;
+
+    &:hover {
+        background: #f0f0f0;
+    }
 `
 const ListsContainer = styled.div`
     display: flex;

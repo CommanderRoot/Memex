@@ -61,6 +61,14 @@ export default class RibbonContainer extends StatefulUIElement<
         }
     }
 
+    private whichFeed = () => {
+        if (process.env.NODE_ENV === 'production') {
+            return 'https://memex.social/feed'
+        } else {
+            return 'https://staging.memex.social/feed'
+        }
+    }
+
     private handleSidebarOpen = () => {
         if (this.state.commentBox.showCommentBox) {
             this.processEvent('cancelComment', null)
@@ -93,6 +101,9 @@ export default class RibbonContainer extends StatefulUIElement<
             <Ribbon
                 ref={this.ribbonRef}
                 setRef={this.props.setRef}
+                getListNameById={(id) =>
+                    this.state.lists.listData[id]?.name ?? 'Missing list'
+                }
                 toggleShowExtraButtons={() => {
                     this.processEvent('toggleShowExtraButtons', null)
                 }}
@@ -110,6 +121,10 @@ export default class RibbonContainer extends StatefulUIElement<
                 handleRibbonToggle={() =>
                     this.processEvent('toggleRibbon', null)
                 }
+                activityIndicator={{
+                    activityIndicatorBG: this.props.activityIndicatorBG,
+                    openFeedUrl: () => window.open(this.whichFeed(), '_blank'),
+                }}
                 highlights={{
                     ...this.state.highlights,
                     handleHighlightsToggle: () =>
@@ -181,16 +196,49 @@ export default class RibbonContainer extends StatefulUIElement<
                         this.props.customLists.fetchPageLists({
                             url: this.normalizedPageUrl,
                         }),
-                    queryEntries: (query) =>
-                        this.props.customLists.searchForListSuggestions({
-                            query,
+                    queryEntries: async (query) => {
+                        const { customLists, contentSharing } = this.props
+                        const suggestions = await customLists.searchForListSuggestions(
+                            {
+                                query,
+                            },
+                        )
+                        const remoteListIds = await contentSharing.getRemoteListIds(
+                            {
+                                localListIds: suggestions.map((s) => s.id),
+                            },
+                        )
+                        return suggestions.map((sug) => ({
+                            localId: sug.id,
+                            name: sug.name,
+                            remoteId: remoteListIds[sug.id] ?? null,
+                            createdAt: sug.createdAt,
+                            focused: false,
+                        }))
+                    },
+                    selectEntry: (id) =>
+                        this.processEvent('updateLists', {
+                            value: { added: id, deleted: null, selected: [] },
                         }),
+                    unselectEntry: (id) =>
+                        this.processEvent('updateLists', {
+                            value: { added: null, deleted: id, selected: [] },
+                        }),
+                    createNewEntry: async (name) => {
+                        const listId = await this.props.customLists.createCustomList(
+                            { name },
+                        )
+                        await this.processEvent('updateLists', {
+                            value: {
+                                added: listId,
+                                deleted: null,
+                                selected: [],
+                            },
+                        })
+                        return listId
+                    },
                     loadDefaultSuggestions: this.props.customLists
                         .fetchInitialListSuggestions,
-                    loadRemoteListNames: async () => {
-                        const remoteLists = await this.props.contentSharing.getAllRemoteLists()
-                        return remoteLists.map((list) => list.name)
-                    },
                 }}
                 search={{
                     ...this.state.search,

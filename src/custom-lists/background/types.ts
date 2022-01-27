@@ -1,4 +1,5 @@
 import { SharedAnnotationReference } from '@worldbrain/memex-common/lib/content-sharing/types'
+import { SpaceDisplayEntry } from '../ui/CollectionPicker/logic'
 
 export interface PageList {
     id: number
@@ -6,6 +7,7 @@ export interface PageList {
     remoteId?: string
     description?: string
     pages?: string[]
+    createdAt: Date
     isNestable?: boolean
     isDeletable?: boolean
     isOwned?: boolean
@@ -82,24 +84,22 @@ export interface RemoteCollectionsInterface {
     fetchListById(args: { id: number }): Promise<PageList>
     fetchListByName(args: { name: string }): Promise<PageList>
     fetchListPagesByUrl(args: { url: string }): Promise<PageList[]>
-    fetchInitialListSuggestions(args?: { limit?: number }): Promise<string[]>
+    fetchInitialListSuggestions(args?: {
+        limit?: number
+    }): Promise<SpaceDisplayEntry[]>
     fetchListPagesById(args: { id: number }): Promise<PageListEntry[]>
-    fetchPageLists(args: { url: string }): Promise<string[]>
+    fetchPageLists(args: { url: string }): Promise<number[]>
     fetchListIdsByUrl(args: { url: string }): Promise<number[]>
     fetchListIgnoreCase(args: { name: string }): Promise<PageList[]>
     searchForListSuggestions(args: {
         query: string
         limit?: number
-    }): Promise<string[]>
-    addOpenTabsToList(args: {
-        name: string
-        listId?: number
-        time?: number
-    }): Promise<void>
+    }): Promise<Array<Omit<PageList, 'createdAt'> & { createdAt: number }>>
+    addOpenTabsToList(args: { listId: number; time?: number }): Promise<void>
     removeOpenTabsFromList(args: { listId: number }): Promise<void>
     updateListForPage(args: {
-        added?: string
-        deleted?: string
+        added?: number
+        deleted?: number
         url: string
         tabId?: number
         skipPageIndexing?: boolean
@@ -109,4 +109,5 @@ export interface RemoteCollectionsInterface {
 
 export interface CollectionsSettings {
     suggestions?: string[]
+    suggestionIds: number[]
 }

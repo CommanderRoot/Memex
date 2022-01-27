@@ -1,4 +1,6 @@
 import type { PickerUpdateHandler } from 'src/common-ui/GenericPicker/types'
+import type { SpacePickerDependencies } from 'src/custom-lists/ui/CollectionPicker/logic'
+import type { Props as ActivityIndicatorProps } from 'src/activity-indicator/ui'
 
 export interface RibbonSubcomponentProps {
     highlights: RibbonHighlightsProps
@@ -10,6 +12,7 @@ export interface RibbonSubcomponentProps {
     lists: RibbonListsProps
     search: RibbonSearchProps
     pausing: RibbonPausingProps
+    activityIndicator: ActivityIndicatorProps
 }
 
 export interface RibbonHighlightsProps {
@@ -31,7 +34,7 @@ export interface RibbonSidebarProps {
 
 export interface RibbonCommentBoxProps {
     tags: string[]
-    lists: string[]
+    lists: number[]
     commentText: string
     showCommentBox: boolean
     isCommentSaved: boolean
@@ -39,7 +42,7 @@ export interface RibbonCommentBoxProps {
     cancelComment: () => void
     setShowCommentBox: (value: boolean) => void
     updateCommentBoxTags: (tags: string[]) => void
-    updateCommentBoxLists: (tags: string[]) => void
+    updateCommentBoxLists: (lists: number[]) => void
     changeComment: (text: string) => void
 }
 
@@ -68,13 +71,16 @@ export interface ListEntryArgs {
 export interface RibbonListsProps {
     pageBelongsToList: boolean
     showListsPicker: boolean
-    updateLists: PickerUpdateHandler
-    listAllTabs: (value: string) => Promise<void>
+    listData: { [listId: number]: { name: string } }
+    updateLists: PickerUpdateHandler<number>
+    listAllTabs: (value: number) => Promise<void>
     setShowListsPicker: (value: boolean) => void
-    fetchInitialListSelections: () => Promise<string[]>
-    loadDefaultSuggestions: () => Promise<string[]>
-    queryEntries: (query: string) => Promise<string[]>
-    loadRemoteListNames: () => Promise<string[]>
+    fetchInitialListSelections: () => Promise<number[]>
+    loadDefaultSuggestions: SpacePickerDependencies['loadDefaultSuggestions']
+    queryEntries: SpacePickerDependencies['queryEntries']
+    selectEntry: SpacePickerDependencies['selectEntry']
+    unselectEntry: SpacePickerDependencies['unselectEntry']
+    createNewEntry: SpacePickerDependencies['createNewEntry']
 }
 
 export interface RibbonSearchProps {
